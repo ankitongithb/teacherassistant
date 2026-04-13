@@ -1,0 +1,125 @@
+package com.ta.service;
+
+import com.ta.dto.teacher.TeacherProfileDTO;
+import com.ta.exception.DuplicateResourceException;
+import com.ta.exception.ResourceNotFoundException;
+import com.ta.model.Subject;
+import com.ta.model.Teacher;
+import com.ta.repository.SubjectRepository;
+import com.ta.repository.TeacherRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
+
+@Service
+@RequiredArgsConstructor
+public class TeacherService {
+
+    private final TeacherRepository teacherRepository;
+    private final SubjectRepository subjectRepository;
+
+    public Teacher getTeacherByEmail(String email) {
+        return teacherRepository.findByEmailAndIsDeletedFalse(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Teacher not found"));
+    }
+
+    public TeacherProfileDTO getProfile(String email) {
+        Teacher teacher = getTeacherByEmail(email);
+        List<Subject> subjects = subjectRepository.findByTeacherIdAndIsDeletedFalse(teacher.getId());
+
+        return TeacherProfileDTO.builder()
+                .id(teacher.getId())
+                .name(teacher.getName())
+                .email(teacher.getEmail())
+                .collegeName(teacher.getCollegeName())
+                .department(teacher.getDepartment())
+                .profileCompleted(teacher.getProfileCompleted())
+                .subjects(subjects.stream().map(s -> TeacherProfileDTO.SubjectDTO.builder()
+                        .id(s.getId())
+                        .subjectName(s.getSubjectName())
+                        .subjectCode(s.getSubjectCode())
+                        .build()).collect(Collectors.toList()))
+                .build();
+    }
+
+    @Transactional
+    public TeacherProfileDTO updateProfile(String email, TeacherProfileDTO dto) {
+        Teacher teacher = getTeacherByEmail(email);
+        teacher.setCollegeName(dto.getCollegeName());
+        teacher.setDepartment(dto.getDepartment());
+        teacher.setProfileCompleted(true);
+
+        // Handle subjects
+        if (dto.getSubjects() != null) {
+            for (TeacherProfileDTO.SubjectDTO subjectDTO : dto.getSubjects()) {
+                if (subjectDTO.getId() != null) {
+                    // Update existing
+                    Subject subject = subjectRepository.findById(subjectDTO.getId())
+                            .orElseThrow(() -> new ResourceNotFoundException("Subject not found"));
+                    subject.setSubjectName(subjectDTO.getSubjectName());
+                    subject.setSubjectCode(subjectDTO.getSubjectCode());
+                    subjectRepository.save(subject);
+                } else {
+                    // Create new
+                    if (subjectRepository.existsBySubjectCode(subjectDTO.getSubjectCode())) {
+                        throw new DuplicateResourceException("Subject code '" + subjectDTO.getSubjectCode() + "' already exists");
+                    }
+                    Subject subject = Subject.builder()
+                            .subjectName(subjectDTO.getSubjectName())
+                            .subjectCode(subjectDTO.getSubjectCode())
+                            .teacher(teacher)
+                            .build();
+                    subjectRepository.save(subject);
+                }
+            }
+        }
+
+        teacherRepository.save(teacher);
+        return getProfile(email);
+    }
+
+    public List<TeacherProfileDTO.SubjectDTO> getSubjects(String email) {
+        Teacher teacher = getTeacherByEmail(email);
+        return subjectRepository.findByTeacherIdAndIsDeletedFalse(teacher.getId()).stream()
+                .map(s -> TeacherProfileDTO.SubjectDTO.builder()
+                        .id(s.getId())
+                        .subjectName(s.getSubjectName())
+                        .subjectCode(s.getSubjectCode())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    @Transactional
+    public TeacherProfileDTO.SubjectDTO addSubject(String email, TeacherProfileDTO.SubjectDTO dto) {
+        Teacher teacher = getTeacherByEmail(email);
+        if (subjectRepository.existsBySubjectCode(dto.getSubjectCode())) {
+            throw new DuplicateResourceException("Subject code '" + dto.getSubjectCode() + "' already exists");
+        }
+        Subject subject = Subject.builder()
+                .subjectName(dto.getSubjectName())
+                .subjectCode(dto.getSubjectCode())
+                .teacher(teacher)
+                .build();
+        subject = subjectRepository.save(subject);
+        return TeacherProfileDTO.SubjectDTO.builder()
+                .id(subject.getId())
+                .subjectName(subject.getSubjectName())
+                .subjectCode(subject.getSubjectCode())
+                .build();
+    }
+
+    @Transactional
+    public void deleteSubject(String email, Long subjectId) {
+        Teacher teacher = getTeacherByEmail(email);
+        Subject subject = subjectRepository.findById(subjectId)
+                .orElseThrow(() -> new ResourceNotFoundException("Subject not found"));
+        if (!subject.getTeacher().getId().equals(teacher.getId())) {
+            throw new IllegalArgumentException("Subject does not belong to this teacher");
+        }
+        subject.setIsDeleted(true);
+        subjectRepository.save(subject);
+    }
+}
