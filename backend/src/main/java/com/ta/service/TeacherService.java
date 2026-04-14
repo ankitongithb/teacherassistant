@@ -77,16 +77,26 @@ public class TeacherService {
                     subject.setSubjectCode(subjectDTO.getSubjectCode());
                     subjectRepository.save(subject);
                 } else {
-                    // Create new
-                    if (subjectRepository.existsBySubjectCode(subjectDTO.getSubjectCode())) {
-                        throw new DuplicateResourceException("Subject code '" + subjectDTO.getSubjectCode() + "' already exists");
+                    // Create new or restore deleted
+                    java.util.Optional<Subject> existingOpt = subjectRepository.findBySubjectCode(subjectDTO.getSubjectCode());
+                    if (existingOpt.isPresent()) {
+                        Subject existing = existingOpt.get();
+                        if (existing.getTeacher().getId().equals(teacher.getId())) {
+                            // Restore the subject
+                            existing.setSubjectName(subjectDTO.getSubjectName());
+                            existing.setIsDeleted(false);
+                            subjectRepository.save(existing);
+                        } else {
+                            throw new DuplicateResourceException("Subject code '" + subjectDTO.getSubjectCode() + "' is already used by another teacher");
+                        }
+                    } else {
+                        Subject subject = Subject.builder()
+                                .subjectName(subjectDTO.getSubjectName())
+                                .subjectCode(subjectDTO.getSubjectCode())
+                                .teacher(teacher)
+                                .build();
+                        subjectRepository.save(subject);
                     }
-                    Subject subject = Subject.builder()
-                            .subjectName(subjectDTO.getSubjectName())
-                            .subjectCode(subjectDTO.getSubjectCode())
-                            .teacher(teacher)
-                            .build();
-                    subjectRepository.save(subject);
                 }
             }
         }
@@ -109,14 +119,23 @@ public class TeacherService {
     @Transactional
     public TeacherProfileDTO.SubjectDTO addSubject(String email, TeacherProfileDTO.SubjectDTO dto) {
         Teacher teacher = getTeacherByEmail(email);
-        if (subjectRepository.existsBySubjectCode(dto.getSubjectCode())) {
-            throw new DuplicateResourceException("Subject code '" + dto.getSubjectCode() + "' already exists");
+        Subject subject;
+        java.util.Optional<Subject> existingOpt = subjectRepository.findBySubjectCode(dto.getSubjectCode());
+        if (existingOpt.isPresent()) {
+            subject = existingOpt.get();
+            if (subject.getTeacher().getId().equals(teacher.getId())) {
+                subject.setSubjectName(dto.getSubjectName());
+                subject.setIsDeleted(false);
+            } else {
+                throw new DuplicateResourceException("Subject code '" + dto.getSubjectCode() + "' is already used by another teacher");
+            }
+        } else {
+            subject = Subject.builder()
+                    .subjectName(dto.getSubjectName())
+                    .subjectCode(dto.getSubjectCode())
+                    .teacher(teacher)
+                    .build();
         }
-        Subject subject = Subject.builder()
-                .subjectName(dto.getSubjectName())
-                .subjectCode(dto.getSubjectCode())
-                .teacher(teacher)
-                .build();
         subject = subjectRepository.save(subject);
         return TeacherProfileDTO.SubjectDTO.builder()
                 .id(subject.getId())
