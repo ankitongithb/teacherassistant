@@ -54,6 +54,20 @@ public class TeacherService {
 
         // Handle subjects
         if (dto.getSubjects() != null) {
+            java.util.List<Subject> existingSubjects = subjectRepository.findByTeacherIdAndIsDeletedFalse(teacher.getId());
+            java.util.List<Long> incomingSubjectIds = dto.getSubjects().stream()
+                    .map(TeacherProfileDTO.SubjectDTO::getId)
+                    .filter(java.util.Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            // Delete removed subjects
+            for (Subject existing : existingSubjects) {
+                if (!incomingSubjectIds.contains(existing.getId())) {
+                    existing.setIsDeleted(true);
+                    subjectRepository.save(existing);
+                }
+            }
+
             for (TeacherProfileDTO.SubjectDTO subjectDTO : dto.getSubjects()) {
                 if (subjectDTO.getId() != null) {
                     // Update existing
