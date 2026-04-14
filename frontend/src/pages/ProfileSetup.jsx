@@ -44,7 +44,7 @@ export default function ProfileSetup() {
       toast.error('Subject code already added');
       return;
     }
-    setForm({ ...form, subjects: [...form.subjects, { ...newSubject }] });
+    setForm({ ...form, subjects: [{ ...newSubject }, ...form.subjects] });
     setNewSubject({ subjectName: '', subjectCode: '' });
   };
 
@@ -139,28 +139,30 @@ export default function ProfileSetup() {
               </div>
 
               {/* Add subject */}
-              <div className="flex gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
                 <input
                   type="text"
                   value={newSubject.subjectName}
                   onChange={(e) => setNewSubject({ ...newSubject, subjectName: e.target.value })}
-                  className="input-base flex-1"
+                  className="input-base flex-1 w-full"
                   placeholder="Subject name"
                 />
-                <input
-                  type="text"
-                  value={newSubject.subjectCode}
-                  onChange={(e) => setNewSubject({ ...newSubject, subjectCode: e.target.value.toUpperCase() })}
-                  className="input-base w-32"
-                  placeholder="Code"
-                />
-                <button
-                  type="button"
-                  onClick={addSubject}
-                  className="btn-secondary flex items-center gap-1 whitespace-nowrap"
-                >
-                  <Plus className="w-4 h-4" /> Add
-                </button>
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={newSubject.subjectCode}
+                    onChange={(e) => setNewSubject({ ...newSubject, subjectCode: e.target.value.toUpperCase() })}
+                    className="input-base w-full sm:w-32"
+                    placeholder="Code"
+                  />
+                  <button
+                    type="button"
+                    onClick={addSubject}
+                    className="btn-secondary flex items-center justify-center gap-1 whitespace-nowrap min-w-[80px]"
+                  >
+                    <Plus className="w-4 h-4" /> Add
+                  </button>
+                </div>
               </div>
             </div>
 
