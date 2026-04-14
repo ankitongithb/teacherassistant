@@ -44,7 +44,10 @@ public class AttendanceService {
                 .build();
         session = sessionRepository.save(session);
 
+        java.util.Set<Long> processedStudentIds = new java.util.HashSet<>();
         for (AttendanceMarkDTO.StudentAttendance sa : dto.getRecords()) {
+            if (!processedStudentIds.add(sa.getStudentId())) continue;
+            
             Student student = studentRepository.findByIdAndIsDeletedFalse(sa.getStudentId())
                     .orElseThrow(() -> new ResourceNotFoundException("Student not found: " + sa.getStudentId()));
             AttendanceRecord record = AttendanceRecord.builder()
@@ -71,7 +74,12 @@ public class AttendanceService {
 
         // Update records
         recordRepository.deleteBySessionId(sessionId);
+        recordRepository.flush(); // Force flush of delete before inserts to prevent constraint violation
+        
+        java.util.Set<Long> processedStudentIds = new java.util.HashSet<>();
         for (AttendanceMarkDTO.StudentAttendance sa : dto.getRecords()) {
+            if (!processedStudentIds.add(sa.getStudentId())) continue;
+            
             Student student = studentRepository.findByIdAndIsDeletedFalse(sa.getStudentId())
                     .orElseThrow(() -> new ResourceNotFoundException("Student not found"));
             AttendanceRecord record = AttendanceRecord.builder()

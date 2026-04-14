@@ -9,6 +9,8 @@ import java.util.List;
 
 public interface AttendanceRecordRepository extends JpaRepository<AttendanceRecord, Long> {
     List<AttendanceRecord> findBySessionId(Long sessionId);
+    @org.springframework.data.jpa.repository.Modifying
+    @org.springframework.data.jpa.repository.Query("DELETE FROM AttendanceRecord r WHERE r.session.id = :sessionId")
     void deleteBySessionId(Long sessionId);
 
     @Query("SELECT COUNT(r) FROM AttendanceRecord r WHERE r.student.id = :studentId AND r.status = :status")
