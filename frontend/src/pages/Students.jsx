@@ -3,6 +3,7 @@ import API from '../api/axios';
 import { Plus, Edit2, Trash2, GraduationCap } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Modal from '../components/ui/Modal';
+import ConfirmModal from '../components/ui/ConfirmModal';
 import Input from '../components/ui/Input';
 import Select from '../components/ui/Select';
 import Table from '../components/ui/Table';
@@ -18,6 +19,7 @@ export default function Students() {
   const [batches, setBatches] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, id: null });
   const [editing, setEditing] = useState(null);
   const [saving, setSaving] = useState(false);
   const [search, setSearch] = useState('');
@@ -91,11 +93,16 @@ export default function Students() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Delete this student?')) return;
+  const handleDeleteClick = (id) => {
+    setConfirmModal({ isOpen: true, id });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmModal.id) return;
     try {
-      await API.delete(`/students/${id}`);
+      await API.delete(`/students/${confirmModal.id}`);
       toast.success('Student deleted');
+      setConfirmModal({ isOpen: false, id: null });
       fetchStudents();
     } catch (err) {
       toast.error('Failed to delete');
@@ -134,7 +141,7 @@ export default function Students() {
         <button onClick={(e) => { e.stopPropagation(); openEdit(row); }} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 text-dark-400 hover:text-primary-600 transition-colors">
           <Edit2 className="w-4 h-4" />
         </button>
-        <button onClick={(e) => { e.stopPropagation(); handleDelete(row.id); }} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 text-dark-400 hover:text-red-600 transition-colors">
+        <button onClick={(e) => { e.stopPropagation(); handleDeleteClick(row.id); }} className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 text-dark-400 hover:text-red-600 transition-colors">
           <Trash2 className="w-4 h-4" />
         </button>
       </div>
@@ -201,6 +208,15 @@ export default function Students() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ isOpen: false, id: null })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Student"
+        message="Are you sure you want to delete this student? All their marks and attendance records will be permanently removed."
+        confirmText="Delete Student"
+      />
     </div>
   );
 }

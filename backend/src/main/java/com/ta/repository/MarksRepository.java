@@ -27,4 +27,8 @@ public interface MarksRepository extends JpaRepository<Marks, Long> {
 
     @Query("SELECT m FROM Marks m WHERE m.isDeleted = false AND m.student.batch.id = :batchId AND m.subject.id = :subjectId ORDER BY m.marksObtained DESC")
     List<Marks> findByBatchAndSubject(@Param("batchId") Long batchId, @Param("subjectId") Long subjectId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM Marks m WHERE m.subject.id = :subjectId")
+    void deleteBySubjectId(@Param("subjectId") Long subjectId);
 }

@@ -27,4 +27,8 @@ public interface AttendanceSessionRepository extends JpaRepository<AttendanceSes
 
     @Query("SELECT a FROM AttendanceSession a WHERE a.teacher.id = :teacherId AND a.date >= :since ORDER BY a.date ASC")
     List<AttendanceSession> findRecentByTeacherId(@Param("teacherId") Long teacherId, @Param("since") LocalDate since);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM AttendanceSession a WHERE a.subject.id = :subjectId")
+    void deleteBySubjectId(@Param("subjectId") Long subjectId);
 }

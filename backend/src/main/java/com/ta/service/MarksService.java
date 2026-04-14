@@ -76,27 +76,29 @@ public class MarksService {
 
         List<Marks> marks = marksRepository.findFiltered(teacher.getId(), subjectId, type, name);
 
-        // Add ranking
-        AtomicInteger rank = new AtomicInteger(1);
-        return marks.stream()
-                .sorted(Comparator.comparingDouble((Marks m) -> m.getMarksObtained() / m.getTotalMarks()).reversed())
-                .map(m -> {
-                    MarksDTO dto = toDTO(m);
-                    dto.setRank(rank.getAndIncrement());
-                    return dto;
-                })
-                .collect(Collectors.toList());
+        return computeRankAndSortByName(marks);
     }
 
     public List<MarksDTO> getMarksByBatchAndSubject(Long batchId, Long subjectId) {
         List<Marks> marks = marksRepository.findByBatchAndSubject(batchId, subjectId);
-        AtomicInteger rank = new AtomicInteger(1);
-        return marks.stream()
-                .map(m -> {
-                    MarksDTO dto = toDTO(m);
-                    dto.setRank(rank.getAndIncrement());
-                    return dto;
-                })
+        return computeRankAndSortByName(marks);
+    }
+
+    private List<MarksDTO> computeRankAndSortByName(List<Marks> marks) {
+        // First convert to DTO and sort by marks to assign rank
+        List<MarksDTO> dtos = marks.stream()
+                .map(this::toDTO)
+                .sorted(Comparator.comparingDouble(MarksDTO::getPercentage).reversed())
+                .collect(Collectors.toList());
+
+        int currentRank = 1;
+        for (MarksDTO dto : dtos) {
+            dto.setRank(currentRank++);
+        }
+
+        // Return sorted alphabetically by student name instead of by marks
+        return dtos.stream()
+                .sorted(Comparator.comparing(MarksDTO::getStudentName, String.CASE_INSENSITIVE_ORDER))
                 .collect(Collectors.toList());
     }
 

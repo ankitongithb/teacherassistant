@@ -20,6 +20,9 @@ public class TeacherService {
 
     private final TeacherRepository teacherRepository;
     private final SubjectRepository subjectRepository;
+    private final com.ta.repository.MarksRepository marksRepository;
+    private final com.ta.repository.AttendanceSessionRepository attendanceSessionRepository;
+    private final com.ta.repository.BatchSubjectRepository batchSubjectRepository;
 
     public Teacher getTeacherByEmail(String email) {
         return teacherRepository.findByEmailAndIsDeletedFalse(email)
@@ -65,6 +68,10 @@ public class TeacherService {
                 if (!incomingSubjectIds.contains(existing.getId())) {
                     existing.setIsDeleted(true);
                     subjectRepository.save(existing);
+                    
+                    marksRepository.deleteBySubjectId(existing.getId());
+                    attendanceSessionRepository.deleteBySubjectId(existing.getId());
+                    batchSubjectRepository.deleteBySubjectId(existing.getId());
                 }
             }
 
@@ -154,5 +161,9 @@ public class TeacherService {
         }
         subject.setIsDeleted(true);
         subjectRepository.save(subject);
+        
+        marksRepository.deleteBySubjectId(subjectId);
+        attendanceSessionRepository.deleteBySubjectId(subjectId);
+        batchSubjectRepository.deleteBySubjectId(subjectId);
     }
 }

@@ -76,7 +76,7 @@ public class AttendanceAnalyticsService {
                             .attendancePercentage(percentage)
                             .build();
                 })
-                .sorted(Comparator.comparing(SubjectAttendanceSummaryDTO.StudentHoursSummary::getAttendancePercentage).reversed())
+                .sorted(Comparator.comparing(SubjectAttendanceSummaryDTO.StudentHoursSummary::getName, String.CASE_INSENSITIVE_ORDER))
                 .collect(Collectors.toList());
 
         // Class average

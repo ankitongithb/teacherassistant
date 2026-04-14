@@ -4,6 +4,7 @@ import { Plus, Edit2, Trash2, Users, BookOpen } from 'lucide-react';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import Modal from '../components/ui/Modal';
+import ConfirmModal from '../components/ui/ConfirmModal';
 import Input from '../components/ui/Input';
 import Badge from '../components/ui/Badge';
 import EmptyState from '../components/ui/EmptyState';
@@ -15,6 +16,7 @@ export default function Batches() {
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
+  const [confirmModal, setConfirmModal] = useState({ isOpen: false, id: null });
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ batchName: '', subjectIds: [] });
   const [saving, setSaving] = useState(false);
@@ -78,10 +80,14 @@ export default function Batches() {
     }
   };
 
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this batch?')) return;
+  const handleDeleteClick = (id) => {
+    setConfirmModal({ isOpen: true, id });
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!confirmModal.id) return;
     try {
-      await API.delete(`/batches/${id}`);
+      await API.delete(`/batches/${confirmModal.id}`);
       toast.success('Batch deleted');
       fetchData();
     } catch (err) {
@@ -130,7 +136,7 @@ export default function Batches() {
                   <button onClick={() => openEdit(batch)} className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-dark-700 text-dark-400 hover:text-primary-600 transition-colors">
                     <Edit2 className="w-4 h-4" />
                   </button>
-                  <button onClick={() => handleDelete(batch.id)} className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 text-dark-400 hover:text-red-600 transition-colors">
+                  <button onClick={() => handleDeleteClick(batch.id)} className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/10 text-dark-400 hover:text-red-600 transition-colors">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
@@ -202,6 +208,15 @@ export default function Batches() {
           </div>
         </form>
       </Modal>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onClose={() => setConfirmModal({ isOpen: false, id: null })}
+        onConfirm={handleConfirmDelete}
+        title="Delete Batch"
+        message="Are you sure you want to permanently delete this batch? This action cannot be undone."
+        confirmText="Delete Batch"
+      />
     </div>
   );
 }
