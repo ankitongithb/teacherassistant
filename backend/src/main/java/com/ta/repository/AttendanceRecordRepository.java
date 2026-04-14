@@ -24,4 +24,8 @@ public interface AttendanceRecordRepository extends JpaRepository<AttendanceReco
 
     @Query("SELECT COUNT(r) FROM AttendanceRecord r WHERE r.session.teacher.id = :teacherId")
     long countTotalByTeacherId(@Param("teacherId") Long teacherId);
+
+    @org.springframework.data.jpa.repository.Modifying
+    @Query("DELETE FROM AttendanceRecord r WHERE r.session.id IN (SELECT s.id FROM AttendanceSession s WHERE s.subject.id = :subjectId)")
+    void deleteBySubjectId(@Param("subjectId") Long subjectId);
 }

@@ -21,6 +21,7 @@ public class TeacherService {
     private final TeacherRepository teacherRepository;
     private final SubjectRepository subjectRepository;
     private final com.ta.repository.MarksRepository marksRepository;
+    private final com.ta.repository.AttendanceRecordRepository attendanceRecordRepository;
     private final com.ta.repository.AttendanceSessionRepository attendanceSessionRepository;
     private final com.ta.repository.BatchSubjectRepository batchSubjectRepository;
 
@@ -70,6 +71,7 @@ public class TeacherService {
                     subjectRepository.save(existing);
                     
                     marksRepository.deleteBySubjectId(existing.getId());
+                    attendanceRecordRepository.deleteBySubjectId(existing.getId());
                     attendanceSessionRepository.deleteBySubjectId(existing.getId());
                     batchSubjectRepository.deleteBySubjectId(existing.getId());
                 }
@@ -163,6 +165,7 @@ public class TeacherService {
         subjectRepository.save(subject);
         
         marksRepository.deleteBySubjectId(subjectId);
+        attendanceRecordRepository.deleteBySubjectId(subjectId);
         attendanceSessionRepository.deleteBySubjectId(subjectId);
         batchSubjectRepository.deleteBySubjectId(subjectId);
     }
